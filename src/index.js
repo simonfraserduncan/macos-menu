@@ -75,7 +75,7 @@ app.whenReady().then(() => {
       { 
         label: 'Join our Discord',
         icon: nativeImage.createFromPath(path.join(app.getAppPath(), 'assets', `discord${iconSuffix}.png`)),
-        click: async () => { await shell.openExternal('https://discord.gg/langflow'); }
+        click: async () => { await shell.openExternal('https://discord.com/invite/EqksyE2EX9'); }
       },
       { 
         label: 'Follow the repo',
