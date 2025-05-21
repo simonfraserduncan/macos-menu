@@ -85,7 +85,7 @@ app.whenReady().then(() => {
       { 
         label: 'Follow on X',
         icon: nativeImage.createFromPath(path.join(app.getAppPath(), 'assets', `x${iconSuffix}.png`)),
-        click: async () => { await shell.openExternal('https://x.com/langflow_org'); }
+        click: async () => { await shell.openExternal('https://x.com/langflow_ai?lang=en'); }
       },
       { type: 'separator' }, 
       {
