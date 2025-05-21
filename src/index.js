@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Tray, nativeImage, Menu, shell } = require('electron');
+const { app, BrowserWindow, Tray, nativeImage, Menu, shell, nativeTheme } = require('electron');
 const path = require('node:path');
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -31,79 +31,89 @@ const createWindow = () => {
 app.whenReady().then(() => {
   // createWindow(); // Commented out to prevent default window
 
-  const iconName = 'langflowTemplate.png';
-  const iconPath = path.join(app.getAppPath(), 'assets', iconName);
-  let image = nativeImage.createFromPath(iconPath);
-  image.isTemplateImage = true;
+  const mainIconName = 'langflowTemplate.png';
+  const mainIconPath = path.join(app.getAppPath(), 'assets', mainIconName);
+  let mainTrayImage = nativeImage.createFromPath(mainIconPath);
+  mainTrayImage.isTemplateImage = true; // Main tray icon IS a template
   
-  tray = new Tray(image);
+  tray = new Tray(mainTrayImage);
   tray.setToolTip('Langflow');
   
-  // Create context menu
-  const contextMenuTemplate = [
-    {
-      label: 'Open Langflow',
-      click: async () => {
-        try {
-          // Attempt to open the Langflow application
-          // Assumes Langflow.app is in the standard /Applications directory
-          await shell.openPath('/Applications/Langflow.app'); 
-        } catch (error) {
-          console.error('Failed to open Langflow app:', error);
-          // Optionally, notify the user that the app couldn't be found or opened
+  // Function to create the context menu
+  // This is needed so we can rebuild it when the theme changes
+  const createContextMenu = () => {
+    const iconSuffix = nativeTheme.shouldUseDarkColors ? '-dark' : '-light';
+
+    // Test for Open Langflow icon
+    const openLangflowIconName = `open-langflow${iconSuffix}.png`;
+    const openLangflowIconPath = path.join(app.getAppPath(), 'assets', openLangflowIconName);
+    const openLangflowImage = nativeImage.createFromPath(openLangflowIconPath);
+    // console.log(`Loading icon: ${openLangflowIconPath}`); // Remove this log
+    // console.log(`Scale factors for ${openLangflowIconName}:`, openLangflowImage.getScaleFactors()); // Remove this log
+    // End Test
+
+    const contextMenuTemplate = [
+      {
+        label: 'Open Langflow',
+        icon: openLangflowImage, // Use the test image
+        click: async () => {
+          try { await shell.openPath('/Applications/Langflow.app'); } catch (error) { console.error('Failed to open Langflow app:', error); }
         }
-      }
-    },
-    { type: 'separator' }, // Separator after Open Langflow
-    { 
-      label: 'Send Feedback', 
-      click: async () => {
-        await shell.openExternal('https://github.com/logspace-ai/langflow/issues');
-      }
-    },
-    { 
-      label: 'Docs', 
-      click: async () => {
-        await shell.openExternal('https://docs.langflow.org/');
-      }
-    },
-    { type: 'separator' },
-    { 
-      label: 'Join our Discord', 
-      click: async () => {
-        await shell.openExternal('https://discord.gg/langflow'); // Placeholder, verify actual link
-      }
-    },
-    { 
-      label: 'Follow the repo', 
-      click: async () => {
-        await shell.openExternal('https://github.com/logspace-ai/langflow');
-      }
-    },
-    { 
-      label: 'Follow on X', 
-      click: async () => {
-        await shell.openExternal('https://x.com/langflow_org'); // Placeholder, verify actual handle/link
-      }
-    },
-    { type: 'separator' }, // This is the separator before the new group
-    {
-      label: 'Settings',
-      click: () => {
-        console.log('Settings clicked');
-      }
-    },
-    {
-      label: 'Check for updates',
-      click: () => {
-        console.log('Check for updates clicked');
-      }
-    },
-    { type: 'separator' }, // This is the separator before Quit
-    { label: 'Quit', role: 'quit' }
-  ];
-  const contextMenu = Menu.buildFromTemplate(contextMenuTemplate);
-  tray.setContextMenu(contextMenu);
+      },
+      { type: 'separator' },
+      { 
+        label: 'Send Feedback',
+        icon: nativeImage.createFromPath(path.join(app.getAppPath(), 'assets', `send-feedback${iconSuffix}.png`)),
+        click: async () => { await shell.openExternal('https://github.com/logspace-ai/langflow/issues'); }
+      },
+      { 
+        label: 'Docs',
+        icon: nativeImage.createFromPath(path.join(app.getAppPath(), 'assets', `docs${iconSuffix}.png`)),
+        click: async () => { await shell.openExternal('https://docs.langflow.org/'); }
+      },
+      { type: 'separator' },
+      { 
+        label: 'Join our Discord',
+        icon: nativeImage.createFromPath(path.join(app.getAppPath(), 'assets', `discord${iconSuffix}.png`)),
+        click: async () => { await shell.openExternal('https://discord.gg/langflow'); }
+      },
+      { 
+        label: 'Follow the repo',
+        icon: nativeImage.createFromPath(path.join(app.getAppPath(), 'assets', `github${iconSuffix}.png`)),
+        click: async () => { await shell.openExternal('https://github.com/logspace-ai/langflow'); }
+      },
+      { 
+        label: 'Follow on X',
+        icon: nativeImage.createFromPath(path.join(app.getAppPath(), 'assets', `x${iconSuffix}.png`)),
+        click: async () => { await shell.openExternal('https://x.com/langflow_org'); }
+      },
+      { type: 'separator' }, 
+      {
+        label: 'Settings',
+        accelerator: 'CommandOrControl+,',
+        click: () => {
+          console.log('Settings clicked');
+        }
+      },
+      {
+        label: 'Check for updates',
+        click: () => {
+          console.log('Check for updates clicked');
+        }
+      },
+      { type: 'separator' },
+      { label: 'Quit', role: 'quit' }
+    ];
+    const menu = Menu.buildFromTemplate(contextMenuTemplate);
+    tray.setContextMenu(menu);
+  };
+
+  createContextMenu(); // Initial menu creation
+
+  // Listen for theme changes and update menu icons
+  nativeTheme.on('updated', () => {
+    createContextMenu();
+  });
   
   if (process.platform === 'darwin') {
     app.dock.hide();
